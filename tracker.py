@@ -5,11 +5,14 @@ import time
 import cv2
 import sys
 import websocket
-import getmac
+#import getmac
 import socket
 import subprocess
 from gpiozero import CPUTemperature
 import threading
+import argparse
+import random
+import time
 
 hostname = socket.gethostname()
 ip = subprocess.getoutput("hostname -I")
@@ -18,18 +21,25 @@ try:
 except ImportError:
     import _thread as thread
     
-mac = getmac.get_mac_address()
+#mac = getmac.get_mac_address()
 
+# get serial number
+def getSerial():
+  # Extract serial from cpuinfo file
+  cpuSerial = "0000000000000000"
+  try:
+    f = open('/proc/cpuinfo','r')
+    for line in f:
+      if line[0:6]=='Serial':
+        cpuSerial = line[10:26]
+    f.close()
+  except:
+    cpuSerial = "ERROR000000000"
+ 
+  return cpuSerial
 
+piSerial = getSerial()
 
-"""Small example OSC client
-
-This program sends 10 random values between 0.0 and 1.0 to the /filter address,
-waiting for 1 seconds between each value.
-"""
-import argparse
-import random
-import time
 
 from pythonosc import udp_client
 
@@ -44,22 +54,18 @@ if __name__ == "__main__":
 
   client = udp_client.SimpleUDPClient(args.ip, args.port)
   print('udpClient', args)
-  register = mac + '_' + hostname + '_' + ip
+  register = piSerial + '_' + hostname + '_' + ip
   client.send_message('trackerReg', register)
 
 #monitor the cpu temperature
 def cpuTemp():
     threading.Timer(15.0, cpuTemp).start()
     temperature = str(CPUTemperature())
-    client.send_message('cpuTemp', mac + '_' + temperature)
+    client.send_message('cpuTemp', piSerial + '_' + temperature)
   
-cpuTemp()  
-#  for x in range(10):
-#    client.send_message("/filter", random.random())
-#    time.sleep(1)
+cpuTemp()
 
-# provide path to the haar cascade at python livecam.py
-#cascPath = sys.argv[1]
+#provide path to the haar cascade at python livecam.py
 cascPath = './haarcascade_frontalface_default.xml'
 faceCascade = cv2.CascadeClassifier(cascPath)
  
@@ -88,9 +94,9 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
     )
 
     
-    client.send_message(mac, len(faces))
+    client.send_message(piSerial, len(faces))
     #len(faces)
-    print(mac, len(faces))
+    print(piSerial, len(faces))
     # Draw a rectangle around the faces
     #for (x, y, w, h) in faces:
         #cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
@@ -101,25 +107,6 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
     
     #cv2.imshow('Video', image)    
     rawCapture.truncate(0)
-#    rawCapture.seek(0)
-#    if process(rawCapture):
-#        break
 
-    #if cv2.waitKey(1) & 0xFF == ord('q'):
-        #break
-
-    # show the frame
-    #cv2.imshow("Frame", gray)
-    #key = cv2.waitKey(1) & 0xFF
- 
-     #is this where the cv happens?
- 
- 
-    # clear the stream in preparation for the next frame
-    #rawCapture.truncate(0)
- 
-    # if the `q` key was pressed, break from the loop
-    #if key == ord("q"):
-     #   break
      
 
