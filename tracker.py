@@ -8,6 +8,8 @@ import websocket
 import getmac
 import socket
 import subprocess
+from gpiozero import CPUTemperature
+import threading
 
 hostname = socket.gethostname()
 ip = subprocess.getoutput("hostname -I")
@@ -45,6 +47,13 @@ if __name__ == "__main__":
   register = mac + '_' + hostname + '_' + ip
   client.send_message('trackerReg', register)
 
+#monitor the cpu temperature
+def cpuTemp():
+    threading.Timer(15.0, cpuTemp).start()
+    temperature = str(CPUTemperature())
+    client.send_message('cpuTemp', mac + '_' + temperature)
+  
+cpuTemp()  
 #  for x in range(10):
 #    client.send_message("/filter", random.random())
 #    time.sleep(1)
@@ -81,7 +90,7 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
     
     client.send_message(mac, len(faces))
     #len(faces)
-    print(mac)
+    print(mac, len(faces))
     # Draw a rectangle around the faces
     #for (x, y, w, h) in faces:
         #cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
